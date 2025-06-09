@@ -39,7 +39,6 @@ cmake --build .
 ## 🚀 Run
 
 After building, run the generated `STLViewer` executable.  
-Make sure `Sphericon.stl` is in the same folder or properly loaded from path.
 
 ---
 
