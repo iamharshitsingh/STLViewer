@@ -10,7 +10,7 @@ set(SOURCES
 )
 
 # Create executable from sources
-add_executable(STLViewer ${SOURCES})
+add_executable(STLViewer ${SOURCES} "STLLoader.cpp" "STLLoader.h" "Mesh.h" "Mesh.cpp")
 
 # C++ Standard
 set_property(TARGET STLViewer PROPERTY CXX_STANDARD 20)

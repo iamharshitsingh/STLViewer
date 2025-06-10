@@ -6,4 +6,3 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-// TODO: Reference additional headers your program requires here.
