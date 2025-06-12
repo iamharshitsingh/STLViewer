@@ -34,7 +34,7 @@ int main()
     }
     else
     {
-		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Square.stl");
+		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Sphericon.stl");
 		if (mesh->vertexCount() == 0) {
 			std::cout << "No vertices loaded!" << std::endl;
 		}
@@ -51,7 +51,17 @@ int main()
         else {
             std::cout << "Mesh after removing duplicate vertices has " << mesh->vertexCount() << " vertices." << std::endl;
         }
+
+        const std::vector<Triangle>& triangles = mesh->getTriangles();
+
+        for (size_t i = 0; i < triangles.size(); ++i) {
+            const glm::vec3& n = triangles[i].faceNormal;
+            std::cout << "Triangle " << i << " normal: ("
+                << n.x << ", " << n.y << ", " << n.z << ")\n";
+        }
+
     }
+	std::cout << "Press Enter to exit..." << std::endl;
     std::cin.get();
     return 0;
 }

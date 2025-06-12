@@ -10,13 +10,21 @@ struct Vertex {
 struct Triangle {
     int v1, v2, v3; // Vertex indices
     int adjacentTriangles[3] = { -1, -1, -1 }; // Optional adjacency info
+    glm::vec3 faceNormal{ 0.0f, 0.0f, 0.0f };
+
+	// Constructor for easy initialization
+    Triangle(int a, int b, int c, glm::vec3 inNormal)
+        : v1(a), v2(b), v3(c), faceNormal(inNormal) {
+    }
+    Triangle() = default; //Default Constructor
+
 };
 
 class Mesh {
 public:
     // Basic operations
     void addVertex(const Vertex& vertex);
-    void addTriangle(int v1, int v2, int v3);
+    void addTriangle(const Triangle& tri);
 
     // Access
     std::vector<Vertex>& getVertices() { return vertices; }

@@ -1,11 +1,11 @@
 #include "Mesh.h"
 
 void Mesh::addVertex(const Vertex& vertex) {
-    vertices.push_back(vertex);
+    vertices.emplace_back(vertex);
 }
 
-void Mesh::addTriangle(int v1, int v2, int v3) {
-    triangles.push_back({ v1, v2, v3 });
+void Mesh::addTriangle(const Triangle& tri) {
+    triangles.push_back(tri);
 }
 
 void Mesh::clear() {
