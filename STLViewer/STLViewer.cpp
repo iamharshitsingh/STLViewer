@@ -46,8 +46,8 @@ int main()
         }
 
         //ASCII STL Mesh Loader (won't work on binary files)
-		//std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Square.stl");
-		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Sphericon.stl");
+		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Square.stl");
+		//std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Sphericon.stl");
 		if (mesh->vertexCount() == 0) {
 			std::cout << "No vertices loaded!" << std::endl;
 		}
@@ -65,7 +65,7 @@ int main()
             std::cout << "Mesh after removing duplicate vertices has " << mesh->vertexCount() << " vertices." << std::endl;
         }
 
-        ////Check Triangle Face Normals 
+        ////Check if Triangle Face Normals Insterted correctly
         //const std::vector<Triangle>& triangles = mesh->getTriangles();
         //for (size_t i = 0; i < triangles.size(); ++i) {
         //    const glm::vec3& n = triangles[i].faceNormal;
@@ -75,10 +75,13 @@ int main()
 
         //Compute Per Vertex Normals
         MeshOperations::computePerVertexNormals(*mesh);
-        const std::vector<Vertex>& oldVertices = mesh->getVertices();
-        for (const auto& v : oldVertices) {
+        const std::vector<Vertex>& tempVertices = mesh->getVertices();
+        for (const auto& v : tempVertices) {
             std::cout << "Normal: (" << v.normal.x << ", " << v.normal.y << ", " << v.normal.z << ")\n";
         }
+
+        MeshOperations::computeAdjacency(*mesh);
+        MeshOperations::printNeighborCounts(*mesh);
 
         // Main render loop
         MeshRenderer renderer;
@@ -95,7 +98,6 @@ int main()
         }
 
         glfwTerminate();
-
 
     }
 	std::cout << "Press Enter to exit..." << std::endl;

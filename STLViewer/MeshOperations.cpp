@@ -6,7 +6,7 @@ void MeshOperations::removeDuplicateVertices(Mesh& inMesh) {
     std::unordered_map<glm::vec3, int, Vec3Hash, Vec3Equal> positionToIndex;
     std::vector<int> remap(oldVertices.size(), -1);
 
-    // Build new list of unique vertices
+    //Build new list of unique vertices
     for (size_t i = 0; i < oldVertices.size(); ++i) {
         const glm::vec3& pos = oldVertices[i].position;
 
@@ -22,14 +22,14 @@ void MeshOperations::removeDuplicateVertices(Mesh& inMesh) {
         }
     }
 
-    // Remap triangle indices
+    //Remap triangle indices
     for (auto& tri : inMesh.getTriangles()) {
         tri.v1 = remap[tri.v1];
         tri.v2 = remap[tri.v2];
         tri.v3 = remap[tri.v3];
     }
 
-    // Replace vertex list
+    //Replace vertex list
     inMesh.getVertices() = std::move(newVertices);
 }
 
@@ -57,7 +57,55 @@ void MeshOperations::computePerVertexNormals(Mesh& inMesh) {
             v.normal = glm::normalize(v.normal);
         }
         else {
-            v.normal = glm::vec3(0.0f); // or fallback to something safe
+            v.normal = glm::vec3(0.0f); 
         }
+    }
+}
+
+void MeshOperations::computeAdjacency(Mesh& inMesh) {
+    auto& triangles = inMesh.getTriangles();
+    std::unordered_map<Edge, std::vector<int>, EdgeHash> edgeToFaces;
+
+    //Build edge-to-faces map
+    for (int i = 0; i < static_cast<int>(triangles.size()); ++i) {
+        const Triangle& tri = triangles[i];
+        edgeToFaces[Edge(tri.v1, tri.v2)].push_back(i);
+        edgeToFaces[Edge(tri.v2, tri.v3)].push_back(i);
+        edgeToFaces[Edge(tri.v3, tri.v1)].push_back(i);
+    }
+
+    //Assign adjacent triangle indices
+    for (int i = 0; i < static_cast<int>(triangles.size()); ++i) {
+        Triangle& tri = triangles[i];
+        std::array<Edge, 3> edges = {
+            Edge(tri.v1, tri.v2),
+            Edge(tri.v2, tri.v3),
+            Edge(tri.v3, tri.v1)
+        };
+
+        for (int e = 0; e < 3; ++e) {
+            const auto& faceList = edgeToFaces[edges[e]];
+
+            for (int neighbor : faceList) {
+                if (neighbor != i) {
+                    tri.adjacentTriangles[e] = neighbor;
+                    break; //Only one adjacent triangle per edge
+                }
+            }
+        }
+    }
+}
+
+void MeshOperations::printNeighborCounts(const Mesh& inMesh) {
+    const auto& triangles = inMesh.getTriangles();
+
+    for (size_t i = 0; i < triangles.size(); ++i) {
+        int count = 0;
+        for (int j = 0; j < 3; ++j) {
+            if (triangles[i].adjacentTriangles[j] != -1) {
+                ++count;
+            }
+        }
+        std::cout << "Triangle " << i << " has " << count << " neighbor(s).\n";
     }
 }

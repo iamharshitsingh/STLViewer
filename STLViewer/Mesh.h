@@ -29,6 +29,8 @@ public:
     // Access
     std::vector<Vertex>& getVertices() { return vertices; }
     std::vector<Triangle>& getTriangles() { return triangles; }
+    const std::vector<Vertex>& getVertices() const { return vertices; }
+    const std::vector<Triangle>& getTriangles() const { return triangles; }  
 
     // Basic info
     size_t vertexCount() const { return vertices.size(); }
