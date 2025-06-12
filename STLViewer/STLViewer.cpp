@@ -1,6 +1,7 @@
 ﻿// STLViewer.cpp : Defines the entry point for the application.
 #include "STLViewer.h"
 #include "STLLoader.h"
+#include "MeshOperations.h"
 
 int main()
 {
@@ -33,7 +34,7 @@ int main()
     }
     else
     {
-		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Sphericon.stl");
+		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Square.stl");
 		if (mesh->vertexCount() == 0) {
 			std::cout << "No vertices loaded!" << std::endl;
 		}
@@ -41,6 +42,15 @@ int main()
 			std::cout << "Mesh loaded with " << mesh->vertexCount() << " vertices and "
 				<< mesh->triangleCount() << " triangles." << std::endl;
 		}
+
+        MeshOperations::removeDuplicateVertices(*mesh);
+        
+        if (mesh->vertexCount() == 0) {
+            std::cout << "No vertices loaded!" << std::endl;
+        }
+        else {
+            std::cout << "Mesh after removing duplicate vertices has " << mesh->vertexCount() << " vertices." << std::endl;
+        }
     }
     std::cin.get();
     return 0;
