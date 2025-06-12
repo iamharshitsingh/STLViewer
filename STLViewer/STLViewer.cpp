@@ -3,104 +3,123 @@
 #include "STLLoader.h"
 #include "MeshOperations.h"
 #include "MeshRenderer.h"
+
+std::string loadShaderFromFile(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open shader file: " << path << std::endl;
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+GLuint createShaderProgram(const std::string& vertPath, const std::string& fragPath) {
+    std::string vertCode = loadShaderFromFile(vertPath);
+    std::string fragCode = loadShaderFromFile(fragPath);
+
+    const char* vShaderCode = vertCode.c_str();
+    const char* fShaderCode = fragCode.c_str();
+
+    GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex, 1, &vShaderCode, NULL);
+    glCompileShader(vertex);
+
+    GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment, 1, &fShaderCode, NULL);
+    glCompileShader(fragment);
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vertex);
+    glAttachShader(program, fragment);
+    glLinkProgram(program);
+
+    glDeleteShader(vertex);
+    glDeleteShader(fragment);
+
+    return program;
+}
+
 int main()
 {
-	if (false) //Temporay switch to toggle between loading STL and initializing OpenGL context
-    {
-        if (!glfwInit()) return -1;
+    // Initialize GLFW and create window
+    glfwInit();
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Mesh Renderer", NULL, NULL);
+    glfwMakeContextCurrent(window);
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-        GLFWwindow* window = glfwCreateWindow(800, 600, "STL Viewer", nullptr, nullptr);
-        if (!window) { glfwTerminate(); return -1; }
-
-        glfwMakeContextCurrent(window);
-
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-            std::cerr << "Failed to initialize GLAD\n";
-            return -1;
-        }
-
-        while (!glfwWindowShouldClose(window)) {
-            glClear(GL_COLOR_BUFFER_BIT);
-            glfwSwapBuffers(window);
-            glfwPollEvents();
-        }
-
-        glfwDestroyWindow(window);
-        glfwTerminate();
+    // Initialize GLAD
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
     }
-    else
-    {
-        // Initialize GLFW and create window
-        glfwInit();
-        GLFWwindow* window = glfwCreateWindow(800, 600, "Mesh Renderer", NULL, NULL);
-        glfwMakeContextCurrent(window);
 
-        // Initialize GLAD
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-            std::cout << "Failed to initialize GLAD" << std::endl;
-            return -1;
-        }
+    //ASCII STL Mesh Loader (won't work on binary files)
+    //std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Square.stl");
+    std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Sphericon.stl");
+    //std::shared_ptr<Mesh> mesh = STLLoader::load("Square.stl");
 
-        //ASCII STL Mesh Loader (won't work on binary files)
-		std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Square.stl");
-		//std::shared_ptr<Mesh> mesh = STLLoader::load("C://temp//Sphericon.stl");
-		if (mesh->vertexCount() == 0) {
-			std::cout << "No vertices loaded!" << std::endl;
-		}
-		else {
-			std::cout << "Mesh loaded with " << mesh->vertexCount() << " vertices and "
-				<< mesh->triangleCount() << " triangles." << std::endl;
-		}
-
-        //Remove Duplicate Vertices
-        MeshOperations::removeDuplicateVertices(*mesh);
-        if (mesh->vertexCount() == 0) {
-            std::cout << "No vertices loaded!" << std::endl;
-        }
-        else {
-            std::cout << "Mesh after removing duplicate vertices has " << mesh->vertexCount() << " vertices." << std::endl;
-        }
-
-        ////Check if Triangle Face Normals Insterted correctly
-        //const std::vector<Triangle>& triangles = mesh->getTriangles();
-        //for (size_t i = 0; i < triangles.size(); ++i) {
-        //    const glm::vec3& n = triangles[i].faceNormal;
-        //    std::cout << "Triangle " << i << " normal: ("
-        //        << n.x << ", " << n.y << ", " << n.z << ")\n";
-        //}
-
-        //Compute Per Vertex Normals
-        MeshOperations::computePerVertexNormals(*mesh);
-        const std::vector<Vertex>& tempVertices = mesh->getVertices();
-        for (const auto& v : tempVertices) {
-            std::cout << "Normal: (" << v.normal.x << ", " << v.normal.y << ", " << v.normal.z << ")\n";
-        }
-
-        MeshOperations::computeAdjacency(*mesh);
-        MeshOperations::printNeighborCounts(*mesh);
-
-        // Main render loop
-        MeshRenderer renderer;
-        while (!glfwWindowShouldClose(window)) {
-            // Clear screen
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            // Render your mesh
-            renderer.renderMesh(*mesh);
-
-            // Swap buffers and poll events
-            glfwSwapBuffers(window);
-            glfwPollEvents();
-        }
-
-        glfwTerminate();
-
+    if (mesh->vertexCount() == 0) {
+        std::cout << "No vertices loaded!" << std::endl;
     }
-	std::cout << "Press Enter to exit..." << std::endl;
+    else {
+        std::cout << "Mesh loaded with " << mesh->vertexCount() << " vertices and "
+            << mesh->triangleCount() << " triangles." << std::endl;
+    }
+
+    //Remove Duplicate Vertices
+    MeshOperations::removeDuplicateVertices(*mesh);
+    if (mesh->vertexCount() == 0) {
+        std::cout << "No vertices loaded!" << std::endl;
+    }
+    else {
+        std::cout << "Mesh after removing duplicate vertices has " << mesh->vertexCount() << " vertices." << std::endl;
+    }
+
+    ////Check if Triangle Face Normals Insterted correctly
+    //const std::vector<Triangle>& triangles = mesh->getTriangles();
+    //for (size_t i = 0; i < triangles.size(); ++i) {
+    //    const glm::vec3& n = triangles[i].faceNormal;
+    //    std::cout << "Triangle " << i << " normal: ("
+    //        << n.x << ", " << n.y << ", " << n.z << ")\n";
+    //}
+
+    //Compute Per Vertex Normals
+    MeshOperations::computePerVertexNormals(*mesh);
+    const std::vector<Vertex>& tempVertices = mesh->getVertices();
+    for (const auto& v : tempVertices) {
+        std::cout << "Normal: (" << v.normal.x << ", " << v.normal.y << ", " << v.normal.z << ")\n";
+    }
+
+    MeshOperations::computeAdjacency(*mesh);
+    MeshOperations::printNeighborCounts(*mesh);
+    MeshOperations::printMeshDebugInfo(*mesh);
+
+    std::vector<int> neighborCounts = MeshOperations::getNeighborCounts(*mesh);
+
+    // Load and compile shaders
+    GLuint shaderProgram = createShaderProgram("C://temp//mesh.vert.glsl", "C://temp//mesh.frag.glsl");
+
+    // Upload neighbor counts to MeshRenderer
+    MeshRenderer renderer;
+    renderer.setNeighborData(*mesh, neighborCounts);  // You'll implement this
+
+    // Enable depth testing
+    glEnable(GL_DEPTH_TEST);
+
+    // Main render loop
+    while (!glfwWindowShouldClose(window)) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+        renderer.renderMesh(*mesh);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
+    std::cout << "Press Enter to exit..." << std::endl;
     std::cin.get();
     return 0;
 }

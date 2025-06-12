@@ -1,5 +1,41 @@
 #include "MeshOperations.h"
+#include <algorithm> // for std::min
 
+void MeshOperations::printMeshDebugInfo(const Mesh& inMesh) {
+    std::cout << "\n--- Mesh Debug Info ---\n";
+    std::cout << "Total vertices: " << inMesh.vertexCount() << "\n";
+    std::cout << "Total triangles: " << inMesh.triangleCount() << "\n";
+
+    const auto& vertices = inMesh.getVertices();
+    const auto& triangles = inMesh.getTriangles();
+
+    // Print first few vertices
+    for (size_t i = 0; i < std::min<size_t>(5, vertices.size()); ++i) {
+        const auto& v = vertices[i];
+        std::cout << "Vertex[" << i << "] Pos: ("
+            << v.position.x << ", " << v.position.y << ", " << v.position.z
+            << ") Normal: ("
+            << v.normal.x << ", " << v.normal.y << ", " << v.normal.z
+            << ")\n";
+    }
+
+    // Print first few triangles
+    for (size_t i = 0; i < std::min<size_t>(5, triangles.size()); ++i) {
+        const auto& tri = triangles[i];
+        std::cout << "Triangle[" << i << "] Indices: "
+            << tri.v1 << ", " << tri.v2 << ", " << tri.v3
+            << " | FaceNormal: ("
+            << tri.faceNormal.x << ", "
+            << tri.faceNormal.y << ", "
+            << tri.faceNormal.z << ")"
+            << " | Neighbors: "
+            << tri.adjacentTriangles[0] << ", "
+            << tri.adjacentTriangles[1] << ", "
+            << tri.adjacentTriangles[2] << "\n";
+    }
+
+    std::cout << "------------------------\n";
+}
 void MeshOperations::removeDuplicateVertices(Mesh& inMesh) {
     const std::vector<Vertex>& oldVertices = inMesh.getVertices();
     std::vector<Vertex> newVertices;
@@ -108,4 +144,22 @@ void MeshOperations::printNeighborCounts(const Mesh& inMesh) {
         }
         std::cout << "Triangle " << i << " has " << count << " neighbor(s).\n";
     }
+}
+
+std::vector<int> MeshOperations::getNeighborCounts(const Mesh& inMesh) {
+    std::vector<int> counts;
+    counts.reserve(inMesh.triangleCount());
+
+    const auto& triangles = inMesh.getTriangles();
+    for (const Triangle& tri : triangles) {
+        int count = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (tri.adjacentTriangles[i] != -1) {
+                ++count;
+            }
+        }
+        counts.push_back(count);
+    }
+
+    return counts;
 }

@@ -10,11 +10,12 @@
 class MeshOperations {
 public:
     //Removes duplicate vertices in the mesh and updates triangle indices
-    static void removeDuplicateVertices (Mesh& inMesh);
-    static void computePerVertexNormals (Mesh& inMesh);
-    static void computeAdjacency        (Mesh& inMesh);
-    static void printNeighborCounts     (const Mesh& inMesh);
-
+    static void removeDuplicateVertices         (Mesh& inMesh);
+    static void computePerVertexNormals         (Mesh& inMesh);
+    static void computeAdjacency                (Mesh& inMesh);
+    static void printNeighborCounts             (const Mesh& inMesh);
+    static std::vector<int> getNeighborCounts   (const Mesh& inMesh);
+    static void printMeshDebugInfo              (const Mesh& inMesh);
 private:
     //Helper to hash glm::vec3 (position)
     struct Vec3Hash {

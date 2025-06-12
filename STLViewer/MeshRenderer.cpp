@@ -1,10 +1,11 @@
 #include "MeshRenderer.h"
+#include <vector>
 #include <iostream>
+//#include <glm/gtc/type_ptr.hpp>
+#include "MeshOperations.h"
 
-MeshRenderer::MeshRenderer() {
-    buffersCreated = false;
-    VAO = VBO = EBO = 0;
-    createBuffers();
+MeshRenderer::MeshRenderer()
+    : VAO(0), VBO(0), EBO(0), buffersCreated(false) {
 }
 
 MeshRenderer::~MeshRenderer() {
@@ -12,7 +13,8 @@ MeshRenderer::~MeshRenderer() {
 }
 
 void MeshRenderer::createBuffers() {
-    // Create the OpenGL buffers
+    if (buffersCreated) return;
+
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -20,54 +22,106 @@ void MeshRenderer::createBuffers() {
 }
 
 void MeshRenderer::deleteBuffers() {
-    if (buffersCreated) {
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteBuffers(1, &EBO);
-        buffersCreated = false;
-    }
+    if (!buffersCreated) return;
+
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    buffersCreated = false;
 }
 
 void MeshRenderer::renderMesh(Mesh& mesh) {
-    // Get mesh data
-    std::vector<Vertex>& vertices = mesh.getVertices();
-    std::vector<Triangle>& triangles = mesh.getTriangles();
+    if (mesh.triangleCount() == 0 || mesh.vertexCount() == 0)
+        return;
 
-    if (vertices.empty() || triangles.empty()) {
-        return; // Nothing to render
+    createBuffers();
+
+    // Compute adjacency if not already done
+    MeshOperations::computeAdjacency(mesh);
+    std::vector<int> neighborCounts = MeshOperations::getNeighborCounts(mesh);
+
+    // Generate colored vertex data
+    struct VertexData {
+        glm::vec3 position;
+        glm::vec3 color;
+    };
+
+    std::vector<VertexData> vertexData;
+    std::vector<unsigned int> indices;
+
+    const auto& triangles = mesh.getTriangles();
+    const auto& vertices = mesh.getVertices();
+
+    for (size_t i = 0; i < triangles.size(); ++i) {
+        const Triangle& tri = triangles[i];
+        glm::vec3 color;
+
+        switch (neighborCounts[i]) {
+        case 0: color = glm::vec3(1.0f, 0.0f, 0.0f); break; // red
+        case 1: color = glm::vec3(1.0f, 1.0f, 0.0f); break; // yellow
+        case 2: color = glm::vec3(0.0f, 1.0f, 0.0f); break; // green
+        case 3: color = glm::vec3(0.0f, 0.0f, 1.0f); break; // blue
+        default: color = glm::vec3(1.0f, 1.0f, 1.0f); break; // white
+        }
+
+        unsigned int baseIndex = static_cast<unsigned int>(vertexData.size());
+
+        vertexData.push_back({ vertices[tri.v1].position, color });
+        vertexData.push_back({ vertices[tri.v2].position, color });
+        vertexData.push_back({ vertices[tri.v3].position, color });
+
+        indices.push_back(baseIndex);
+        indices.push_back(baseIndex + 1);
+        indices.push_back(baseIndex + 2);
     }
 
-    // Bind vertex array
+    // Upload data to GPU
     glBindVertexArray(VAO);
 
-    // Upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(VertexData), vertexData.data(), GL_STATIC_DRAW);
 
-    // Set up vertex attributes
-    // Position attribute (location 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    // Position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Normal attribute (location 1) 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
+    // Color
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, color));
     glEnableVertexAttribArray(1);
 
-    // Create index array from triangles
-    std::vector<unsigned int> indices;
-    for (int i = 0; i < triangles.size(); i++) {
-        indices.push_back(triangles[i].v1);
-        indices.push_back(triangles[i].v2);
-        indices.push_back(triangles[i].v3);
+    // Draw
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+    glBindVertexArray(0);
+}
+
+void MeshRenderer::setNeighborData(const Mesh& mesh, const std::vector<int>& neighborCounts) {
+    if (!buffersCreated)
+        createBuffers();
+
+    // Expand triangle-based neighbor data to vertex-level (duplicated per triangle)
+    std::vector<float> expandedNeighborData;
+    const auto& triangles = mesh.getTriangles();
+
+    for (size_t i = 0; i < triangles.size(); ++i) {
+        float value = static_cast<float>(neighborCounts[i]);
+        // Push one value per triangle vertex (3 vertices)
+        expandedNeighborData.push_back(value);
+        expandedNeighborData.push_back(value);
+        expandedNeighborData.push_back(value);
     }
 
-    // Upload indices
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+    glGenBuffers(1, &neighborVBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, neighborVBO);
+    glBufferData(GL_ARRAY_BUFFER, expandedNeighborData.size() * sizeof(float), expandedNeighborData.data(), GL_STATIC_DRAW);
 
-    // Draw the mesh
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    // Set attribute pointer location 2 (match vertex shader)
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
+    glEnableVertexAttribArray(2);
 
-    // Unbind
     glBindVertexArray(0);
 }

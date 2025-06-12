@@ -8,10 +8,12 @@ public:
     ~MeshRenderer();
 
     void renderMesh(Mesh& mesh);
+    void setNeighborData(const Mesh& mesh, const std::vector<int>& neighborCounts);
 
 private:
     unsigned int VAO, VBO, EBO;
     bool buffersCreated;
+    unsigned int neighborVBO = 0;
 
     void createBuffers();
     void deleteBuffers();
