@@ -8,8 +8,8 @@
 class MeshOperations {
 public:
     // Removes duplicate vertices in the mesh and updates triangle indices
-    static void removeDuplicateVertices(Mesh& mesh);
-
+    static void removeDuplicateVertices(Mesh& inMesh);
+    static void computePerVertexNormals(Mesh& inMesh);
 private:
     // Helper to hash glm::vec3 (position)
     struct Vec3Hash {

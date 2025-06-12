@@ -34,7 +34,7 @@ std::shared_ptr<Mesh> STLLoader::load(const std::string& filename) {
         else if (word == "endfacet") {
             // After reading 3 vertices, store the triangle
             if (currentTriIndices.size() == 3) {
-                Triangle tri (currentTriIndices[0], currentTriIndices[0], currentTriIndices[0], currentNormal);
+                Triangle tri (currentTriIndices[0], currentTriIndices[1], currentTriIndices[2], currentNormal);
                 mesh->addTriangle(tri);
             }
             currentTriIndices.clear();
