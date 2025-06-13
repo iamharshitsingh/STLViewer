@@ -43,16 +43,16 @@ GLuint createShaderProgram(const std::string& vertPath, const std::string& fragP
 
 int main()
 {
-    //// Initialize GLFW and create window
-    //glfwInit();
-    //GLFWwindow* window = glfwCreateWindow(800, 600, "Mesh Renderer", NULL, NULL);
-    //glfwMakeContextCurrent(window);
+    // Initialize GLFW and create window
+    glfwInit();
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Mesh Renderer", NULL, NULL);
+    glfwMakeContextCurrent(window);
 
-    //// Initialize GLAD
-    //if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    //    std::cout << "Failed to initialize GLAD" << std::endl;
-    //    return -1;
-    //}
+    // Initialize GLAD
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
     //ASCII STL Mesh Loader (won't work on binary files)
     //std::shared_ptr<Mesh> mesh = STLLoader::load("..//Assets//Sphericon.stl");
     std::shared_ptr<Mesh> mesh = STLLoader::load("..//Assets//Sphericon.stl");
@@ -96,28 +96,28 @@ int main()
 
     std::vector<int> neighborCounts = MeshOperations::getNeighborCounts(*mesh);
 
-    //// Load and compile shaders
-    //GLuint shaderProgram = createShaderProgram("C://temp//mesh.vert.glsl", "C://temp//mesh.frag.glsl");
+    // Load and compile shaders
+    GLuint shaderProgram = createShaderProgram("..//Shaders//mesh.vert.glsl", "..//Shaders//mesh.frag.glsl");
 
-    //// Upload neighbor counts to MeshRenderer
-    //MeshRenderer renderer;
-    //renderer.setNeighborData(*mesh, neighborCounts);  // You'll implement this
+    // Upload neighbor counts to MeshRenderer
+    MeshRenderer renderer;
+    renderer.setNeighborData(*mesh, neighborCounts);  // You'll implement this
 
-    //// Enable depth testing
-    //glEnable(GL_DEPTH_TEST);
+    // Enable depth testing
+    glEnable(GL_DEPTH_TEST);
 
-    //// Main render loop
-    //while (!glfwWindowShouldClose(window)) {
-    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Main render loop
+    while (!glfwWindowShouldClose(window)) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //    glUseProgram(shaderProgram);
-    //    renderer.renderMesh(*mesh);
+        glUseProgram(shaderProgram);
+        renderer.renderMesh(*mesh);
 
-    //    glfwSwapBuffers(window);
-    //    glfwPollEvents();
-    //}
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
 
-    //glfwTerminate();
+    glfwTerminate();
     std::cout << "Press Enter to exit..." << std::endl;
     std::cin.get();
     return 0;
