@@ -40,10 +40,6 @@ cmake --build .
 
 After building, run the generated `STLViewer` executable.  
 
-⚠️ Important:
-Before running, copy the STL file from the STLViewer/Resources/ folder to a known location.
-By default, the program loads from:
-C://temp//Square.stl
 
 
 ---
