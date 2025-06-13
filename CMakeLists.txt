@@ -13,3 +13,6 @@ project ("STLViewer")
 
 # Include sub-projects.
 add_subdirectory ("STLViewer")
+
+# ✅ Copy Assets folder to build output so STL files are accessible at runtime
+file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})
