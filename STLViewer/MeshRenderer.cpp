@@ -1,7 +1,6 @@
 #include "MeshRenderer.h"
 #include <vector>
 #include <iostream>
-//#include <glm/gtc/type_ptr.hpp>
 #include "MeshOperations.h"
 
 MeshRenderer::MeshRenderer()
@@ -94,8 +93,9 @@ void MeshRenderer::renderMesh(Mesh& mesh) {
 
     // Draw
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-
     glBindVertexArray(0);
+
+    setNeighborData(mesh, neighborCounts);
 }
 
 void MeshRenderer::setNeighborData(const Mesh& mesh, const std::vector<int>& neighborCounts) {
