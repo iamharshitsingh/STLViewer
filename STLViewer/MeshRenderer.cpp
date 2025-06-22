@@ -125,3 +125,31 @@ void MeshRenderer::setNeighborData(const Mesh& mesh, const std::vector<int>& nei
 
     glBindVertexArray(0);
 }
+
+void MeshRenderer::renderNormals(const Mesh& mesh, float scale) {
+    const auto& vertices = mesh.getVertices();
+
+    std::vector<glm::vec3> lineVertices;
+    for (const auto& v : vertices) {
+        lineVertices.push_back(v.position);                          // start point
+        lineVertices.push_back(v.position + scale * v.normal);       // end point
+    }
+
+    GLuint normalVBO, normalVAO;
+    glGenVertexArrays(1, &normalVAO);
+    glGenBuffers(1, &normalVBO);
+
+    glBindVertexArray(normalVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+    glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(glm::vec3), lineVertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // Render lines
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(lineVertices.size()));
+
+    glBindVertexArray(0);
+    glDeleteBuffers(1, &normalVBO);
+    glDeleteVertexArrays(1, &normalVAO);
+}

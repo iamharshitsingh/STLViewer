@@ -36,6 +36,7 @@ void MeshOperations::printMeshDebugInfo(const Mesh& inMesh) {
 
     std::cout << "------------------------\n";
 }
+
 void MeshOperations::removeDuplicateVertices(Mesh& inMesh) {
     const std::vector<Vertex>& oldVertices = inMesh.getVertices();
     std::vector<Vertex> newVertices;
@@ -102,7 +103,7 @@ void MeshOperations::computeAdjacency(Mesh& inMesh) {
     auto& triangles = inMesh.getTriangles();
     std::unordered_map<Edge, std::vector<int>, EdgeHash> edgeToFaces;
 
-    //Build edge-to-faces map
+    //Build edge-to-triangle map
     for (int i = 0; i < static_cast<int>(triangles.size()); ++i) {
         const Triangle& tri = triangles[i];
         edgeToFaces[Edge(tri.v1, tri.v2)].push_back(i);

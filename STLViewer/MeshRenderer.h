@@ -9,6 +9,7 @@ public:
 
     void renderMesh(Mesh& mesh);
     void setNeighborData(const Mesh& mesh, const std::vector<int>& neighborCounts);
+    void renderNormals(const Mesh& mesh, float scale = 0.1f);
 
 private:
     unsigned int VAO, VBO, EBO;

@@ -106,132 +106,107 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     if (distance > 20.0f) distance = 20.0f;
 }
 
+int main() {
+    // --- Initialize GLFW ---
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW" << std::endl;
+        return -1;
+    }
 
-int main()
-{
-    // Initialize GLFW and create window
-    glfwInit();
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Mesh Renderer", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Mesh Renderer", nullptr, nullptr);
+    if (!window) {
+        std::cerr << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
     glfwMakeContextCurrent(window);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    // Initialize GLAD
+    // --- Initialize GLAD ---
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    //ASCII STL Mesh Loader (won't work on binary files)
-    //std::shared_ptr<Mesh> mesh = STLLoader::load("..//Resources//Square.stl");
-    std::shared_ptr<Mesh> mesh = STLLoader::load("..//Resources//Sphericon.stl");
-    
-    // Compute bounding box
+    // --- Load Mesh ---
+    //std::shared_ptr<Mesh> mesh = STLLoader::load("../Resources/Sphericon.stl");
+    std::shared_ptr<Mesh> mesh = STLLoader::load("../Resources/Cube.stl");
+    if (!mesh || mesh->vertexCount() == 0) {
+        std::cerr << "Failed to load mesh or no vertices found!" << std::endl;
+        return -1;
+    }
+
+    std::cout << "Loaded mesh with " << mesh->vertexCount() << " vertices and "
+              << mesh->triangleCount() << " triangles." << std::endl;
+
+    // --- Preprocess Mesh ---
+    MeshOperations::removeDuplicateVertices(*mesh);
+    std::cout << "After removing duplicates: " << mesh->vertexCount() << " vertices." << std::endl;
+
+    MeshOperations::computePerVertexNormals(*mesh);
+    MeshOperations::computeAdjacency(*mesh);
+    MeshOperations::printNeighborCounts(*mesh);
+    MeshOperations::printMeshDebugInfo(*mesh);
+
+    // --- Compute Bounding Box & Normalize ---
     glm::vec3 min = mesh->getVertices()[0].position;
     glm::vec3 max = min;
-
     for (const auto& v : mesh->getVertices()) {
         min = glm::min(min, v.position);
         max = glm::max(max, v.position);
     }
-
     glm::vec3 center = (min + max) * 0.5f;
     float radius = glm::length(max - min) * 0.5f;
 
-    if (mesh->vertexCount() == 0) {
-        std::cout << "No vertices loaded!" << std::endl;
-    }
-    else {
-        std::cout << "Mesh loaded with " << mesh->vertexCount() << " vertices and "
-            << mesh->triangleCount() << " triangles." << std::endl;
-    }
+    // --- Load Shaders ---
+    GLuint shaderProgram = createShaderProgram("../Shaders/mesh.vert.glsl",
+                                               "../Shaders/mesh.frag.glsl");
 
-    //Remove Duplicate Vertices
-    MeshOperations::removeDuplicateVertices(*mesh);
-    if (mesh->vertexCount() == 0) {
-        std::cout << "No vertices loaded!" << std::endl;
-    }
-    else {
-        std::cout << "Mesh after removing duplicate vertices has " << mesh->vertexCount() << " vertices." << std::endl;
-    }
-
-    ////Check if Triangle Face Normals Insterted correctly
-    //const std::vector<Triangle>& triangles = mesh->getTriangles();
-    //for (size_t i = 0; i < triangles.size(); ++i) {
-    //    const glm::vec3& n = triangles[i].faceNormal;
-    //    std::cout << "Triangle " << i << " normal: ("
-    //        << n.x << ", " << n.y << ", " << n.z << ")\n";
-    //}
-
-    //Compute Per Vertex Normals
-    MeshOperations::computePerVertexNormals(*mesh);
-    const std::vector<Vertex>& tempVertices = mesh->getVertices();
-    for (const auto& v : tempVertices) {
-        std::cout << "Normal: (" << v.normal.x << ", " << v.normal.y << ", " << v.normal.z << ")\n";
-    }
-
-    //MeshOperations::computeAdjacency(*mesh);
-    //MeshOperations::printNeighborCounts(*mesh);
-    //MeshOperations::printMeshDebugInfo(*mesh);
-
-    //std::vector<int> neighborCounts = MeshOperations::getNeighborCounts(*mesh);
-
-    // Load and compile shaders
-    GLuint shaderProgram = createShaderProgram("..//Shaders//mesh.vert.glsl", "..//Shaders//mesh.frag.glsl");
-
-    // Upload neighbor counts to MeshRenderer
     MeshRenderer renderer;
-    //renderer.setNeighborData(*mesh, neighborCounts);  // You'll implement this
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glDisable(GL_CULL_FACE);
-
-    // Enable depth testing
-    glEnable(GL_DEPTH_TEST);
-
-    // Main render loop
+    // --- Main Render Loop ---
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glUseProgram(shaderProgram);
-        // Setup matrices
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), -center);
-        model = glm::scale(model, glm::vec3(1.0f / radius)); // Normalize size
 
-        // Convert spherical coordinates to cartesian camera position
+        // --- Setup Matrices ---
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), -center);
+        model = glm::scale(model, glm::vec3(1.0f / radius));
+
         float radPitch = glm::radians(pitch);
         float radYaw = glm::radians(yaw);
-        glm::vec3 cameraPos = glm::vec3(
-            distance * cos(radPitch) * sin(glm::radians(yaw)),
+        glm::vec3 cameraPos = {
+            distance * cos(radPitch) * sin(radYaw),
             distance * sin(radPitch),
-            distance * cos(radPitch) * cos(glm::radians(yaw))
-        );
+            distance * cos(radPitch) * cos(radYaw)
+        };
 
-        glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-        glm::mat4 view = glm::lookAt(cameraPos, target, up);
+        // --- Pass Uniforms ---
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f),
-            800.0f / 600.0f,
-            0.1f, 100.0f);
-
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLuint projLoc = glGetUniformLocation(shaderProgram, "projection");
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        // --- Render ---
         renderer.renderMesh(*mesh);
+        renderer.renderNormals(*mesh);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    // --- Cleanup ---
     glfwTerminate();
     std::cout << "Press Enter to exit..." << std::endl;
     std::cin.get();
